@@ -1,0 +1,27 @@
+#ifndef __THICK_LOCKERMATRIX__
+#define __THICK_LOCKERMATRIX__
+
+
+#include <iostream>
+// ThickLockerMatrix
+template <typename T>
+ThickLockerMatrix<T>::ThickLockerMatrix(Matrix<T>& matrix) 
+	: Matrix<T>(matrix.row, matrix.column){
+		originalMatrix = &matrix;
+		thickMatrix = matrix.clone();
+}
+
+template <typename T>
+ThickLockerMatrix<T>::~ThickLockerMatrix() {
+	for(int i = 0; i < Matrix<T>::row; i ++)
+		for(int j = 0; j < Matrix<T>::column; j ++)
+			(*originalMatrix)(i, j) = (*thickMatrix)(i, j);
+	delete thickMatrix;
+}
+
+template <typename T>
+T& ThickLockerMatrix<T>::operator()(int r, int c) {
+	return (*thickMatrix)(r, c);
+}
+
+#endif

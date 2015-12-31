@@ -1,0 +1,21 @@
+#ifndef __COFACTOR_MATRIX__
+#define __COFACTOR_MATRIX__
+
+// ConfactorMatrix
+template <typename T>
+CofactorMatrix<T>::CofactorMatrix(Matrix<T>& matrix, 
+		int $cofactRow, int $cofactColumn) :
+	Matrix<T>(matrix.row - 1, matrix.column - 1),
+	cofactRow($cofactRow), cofactColumn($cofactColumn) {
+		originalMatrix = &matrix;
+}
+
+template <typename T>
+T& CofactorMatrix<T>::operator()(int r, int c) {
+	r %= Matrix<T>::row; c %= Matrix<T>::column;
+	if(r >= cofactRow) r ++;
+	if(c >= cofactColumn) c ++;
+	return (*originalMatrix)(r, c);
+}
+
+#endif

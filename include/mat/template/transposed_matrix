@@ -1,0 +1,16 @@
+#ifndef __TRANSPOSED_MATRIX__
+#define __TRANSPOSED_MATRIX__
+
+// TransposedMatrix
+template <typename T>
+TransposedMatrix<T>::TransposedMatrix(Matrix<T>& matrix) :
+	Matrix<T>(matrix.column, matrix.row) {
+		originalMatrix = &matrix;
+}
+
+template <typename T>
+T& TransposedMatrix<T>::operator()(int r, int c) {
+	return (*originalMatrix)(c, r);
+}
+
+#endif

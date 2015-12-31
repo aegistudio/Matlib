@@ -1,0 +1,37 @@
+#ifndef __SPARSE_LOCKERMATRIX__
+#define __SPARSE_LOCKERMATRIX__
+
+#include "stddef.h"
+
+// SparseLockerMatrix
+template <typename T>
+SparseLockerMatrix<T>::SparseLockerMatrix(Matrix<T>& matrix) 
+	: Matrix<T>(matrix.row, matrix.column) {
+		originalMatrix = &matrix;
+		last = &elements;
+}
+
+template <typename T>
+T& SparseLockerMatrix<T>::operator()(int r, int c) {
+	MatrixWriteTransation<T>& write = *(new MatrixWriteTransation<T>);
+	write.element = (*originalMatrix)(r, c);
+	write.row = r; write.column = c;
+	write.next = NULL;
+
+	last->next = &write;
+	last = &write;
+	return write.element;
+}
+
+template <typename T>
+SparseLockerMatrix<T>::~SparseLockerMatrix() {
+	for(MatrixWriteTransation<T>* pointer = elements.next; pointer != NULL; ) {
+		MatrixWriteTransation<T>& value = *pointer;
+		if((*originalMatrix)(value.row, value.column) != value.element)
+			(*originalMatrix)(value.row, value.column) = value.element;
+		pointer = value.next;
+		delete &(value);
+	}
+}
+
+#endif

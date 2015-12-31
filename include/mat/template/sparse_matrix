@@ -1,0 +1,90 @@
+#ifndef __SPARSE_MATRIX__
+#define __SPARSE_MATRIX__
+
+template<typename T>
+SparseMatrix<T>::~SparseMatrix() {
+	typename std::map<int, std::map<int, T>*>::iterator iter;
+	for(iter = storage.begin(); iter != storage.end(); iter++) 
+		if(iter->second != NULL) 
+			delete (iter->second);
+}
+
+template<typename T>
+int SparseMatrix<T>::loadValue() {
+	int loadValue = 0;
+	#ifdef __SPARSE_MATRIX_CONSIDER_MAPSIZE__
+		loadValue += sizeof(std::map<int, T>);
+	#endif
+	typename std::map<int, std::map<int, T>*>::iterator iter;
+	for(iter = storage.begin(); iter != storage.end(); iter++) 
+		if(iter->second != NULL) {
+			std::map<int, T>& targetMap = *(iter->second);
+			loadValue += sizeof(std::map<int, T>*);
+			#ifdef __SPARSE_MATRIX_CONSIDER_MAPSIZE__
+				loadValue += sizeof(std::map<int, T>);
+			#endif
+			loadValue += targetMap.size() * sizeof(T);
+		}
+	return loadValue;
+}
+
+template<typename T>
+float SparseMatrix<T>::loadRatio() {
+	int _loadValue = loadValue();
+	int _arraySize = (Matrix<T>::row * Matrix<T>::column * sizeof(T));
+	return 1.0f * _loadValue / _arraySize;
+}
+
+template<typename T>
+T& SparseMatrix<T>::index(int r, int c) {
+	try {
+		/** Find the corresponding row **/
+		std::map<int, T>* target = storage.at(r);
+
+		/** Find the corresponding column **/
+		return target->at(c);
+	}
+	catch(std::out_of_range e) {
+		return empty;
+	}
+}
+
+template<typename T>
+void SparseMatrix<T>::flush() {
+	if(lastRow == -1 || lastColumn == -1) return;
+
+	lastRow %= Matrix<T>::row;
+	lastColumn %= Matrix<T>::column;
+
+	std::map<int, T>* columnMap = NULL;
+	if(iszero(lastValue)) {
+		try { columnMap = storage.at(lastRow); }
+		catch(std::out_of_range e) { return; }	// Do not write when it is zero row.
+
+		try { T& value = *(&(columnMap->at(lastColumn))); value = lastValue; }
+		catch(std::out_of_range e) { return; } // Do not write when it is zero cell.
+	}
+	else {
+		try { columnMap = storage.at(lastRow); }
+		catch(std::out_of_range e) { 
+			storage[lastRow] = columnMap = new std::map<int, T>;
+		}
+		(*columnMap)[lastColumn] = lastValue;
+	}
+
+	lastRow = -1;
+	lastColumn = -1;
+}
+
+template<typename T>
+T& SparseMatrix<T>::operator()(int r, int c) {
+	flush();
+
+	lastRow = r;
+	lastColumn = c;
+	lastValue = index(r, c);
+
+	return *(&lastValue);
+}
+
+#endif

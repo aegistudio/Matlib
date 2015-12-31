@@ -1,0 +1,99 @@
+#ifndef __MATRIX__
+#define __MATRIX__
+
+#include "mat/thick_lockermatrix.h"
+#include "mat/cofactor_matrix.h"
+#include "iszero.h"
+
+// Matrix
+template <typename T>
+T Matrix<T>::determinant() throw (MatrixExceptionFlag) {
+	if(column != row) {
+		throw MatrixException::mismatchedRowAndColumn;
+		return 0;
+	}
+	else {
+		if(row == 1) return (*this)(0, 0);
+		T value = 0;
+		for(int r = 0; r < row; r ++) {
+			CofactorMatrix<T> cofactor((*this), r, 0);
+			T current = (*this)(r, 0);
+			if(iszero(current)) continue;
+			if((r % 2) == 0)
+				value += current * cofactor.determinant();
+			else value -= current * cofactor.determinant();
+		}
+		return value;
+	}
+}
+
+template <typename T>
+inline void bioperationDriver(Matrix<T>& result, Matrix<T>& left, Matrix<T>& right,
+	void (*func)(Matrix<T>& result, Matrix<T>& left, Matrix<T>& right)) {
+		if(result.wrapping() == left.wrapping() 
+			|| result.wrapping() == right.wrapping()) {
+			ThickLockerMatrix<T> locker(result);
+			func(locker, left, right);
+		}
+		else func(result, left, right);
+}
+
+// Matrix.add
+template <typename T>
+void addInternal(Matrix<T>& result, Matrix<T>& left, Matrix<T>& right) {
+	for(int i = 0; i < result.row; i ++)
+		for(int j = 0; j < result.column; j ++) 
+			result(i, j) = left(i, j) + right(i, j);
+}
+
+template <typename T>
+void Matrix<T>::add(Matrix<T>& left, Matrix<T>& right) throw (MatrixExceptionFlag) {
+	if(left.row != row || right.row != row)
+		{ throw MatrixException::mismatchedRow; return; }
+	if(left.column != column || right.column != column)
+		{ throw MatrixException::mismatchedColumn; return; }
+	
+	bioperationDriver(*this, left, right, addInternal);
+}
+
+// Matrix.multiply(Matrix)
+template <typename T>
+void multiplyInternal(Matrix<T>& result, Matrix<T>& left, Matrix<T>& right) {
+	for(int i = 0; i < result.row; i ++)
+		for(int j = 0; j < result.column; j ++) {
+			T cellValue = 0;
+			for(int k = 0; k < left.column; k ++)
+				cellValue += left(i, k) * right(k, j);
+			result(i, j) = cellValue;
+	}
+}
+
+template <typename T>
+void Matrix<T>::multiply(Matrix<T>& left, Matrix<T>& right) throw (MatrixExceptionFlag) {
+	if(left.row != row) { throw MatrixException::mismatchedRow; return; }
+	if(right.column != column) { throw MatrixException::mismatchedColumn; return; }
+	if(left.column != right.row) { throw MatrixException::mismatchedRowAndColumn; return; }
+	
+	bioperationDriver(*this, left, right, multiplyInternal);
+}
+
+// Matrix.implements
+template <typename T>
+void Matrix<T>::implements(Matrix<T>& source, void (*func)(T&)) {
+	for(int i = 0; i < row; i ++)
+		for(int j = 0; j < column; j ++) {
+			(*this)(i, j) = source(i, j);
+			func((*this)(i, j));
+		}
+}
+
+template <typename T>
+void Matrix<T>::implements(Matrix<T>& source, void (*func)(T&, int, int)) {
+	for(int i = 0; i < row; i ++)
+		for(int j = 0; j < column; j ++) {
+			(*this)(i, j) = source(i, j);
+			func((*this)(i, j), i, j);
+		}
+}
+
+#endif

@@ -1,0 +1,30 @@
+#ifndef __CONCRETE_MATRIX__
+#define __CONCRETE_MATRIX__
+
+// ConcreteMatrix
+template <typename T>
+ConcreteMatrix<T>::ConcreteMatrix(int $row, int $column) :
+		Matrix<T>($row, $column) {
+	matrix = new T[$row * $column];
+};
+
+template <typename T>
+ConcreteMatrix<T>::~ConcreteMatrix() {
+	delete []matrix;
+};
+
+template <typename T>
+T& ConcreteMatrix<T>::operator()(int r, int c) {
+	return *(matrix + (r % Matrix<T>::row) * Matrix<T>::column + (c % Matrix<T>::column));
+}
+
+template <typename T>
+Matrix<T>* ConcreteMatrix<T>::clone() {
+	ConcreteMatrix<T>* cloned = new ConcreteMatrix<T>(Matrix<T>::row, Matrix<T>::column);
+	for(int i = 0; i < Matrix<T>::row; i ++)
+		for(int j = 0; j < Matrix<T>::column;j ++)
+			(*cloned)(i, j) = operator()(i, j);
+	return cloned;
+}
+
+#endif

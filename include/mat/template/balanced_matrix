@@ -1,0 +1,39 @@
+#ifndef __BALANCED_MATRIX__
+#define __BALANCED_MATRIX__
+
+#include "iszero.h"
+
+template<typename T>
+LoadMatrix<T>::LoadMatrix(Matrix<T>* wrappedMatrix) :
+	Matrix<T>(wrappedMatrix->row, wrappedMatrix->column), 
+	matrix(wrappedMatrix),
+	previousRow(-1), previousColumn(-1),
+	previousValue(0), notZeroCounter(0) {	}
+
+template<typename T>
+Matrix<T>* LoadMatrix<T>::clone() {
+	LoadMatrix<T>* loadMatrix 
+		= new LoadMatrix<T>(matrix->clone());
+		loadMatrix->previousRow = previousRow;
+		loadMatrix->previousColumn = previousColumn;
+		loadMatrix->previousValue = previousValue;
+		loadMatrix->notZeroCounter = notZeroCounter;
+	return loadMatrix;
+}
+
+template<typename T>
+T& LoadMatrix<T>::operator()(int r, int c) {
+	if(previousRow != -1 && previousColumn != -1) {
+		T newValue = (*matrix)(previousRow, previousColumn);
+		if(newValue != previousValue) {
+			if(!iszero(newValue) && iszero(previousValue)) notZeroCounter ++;
+			else if(iszero(newValue) && !iszero(previousValue)) notZeroCounter --;
+		}
+	}
+	previousRow = r;
+	previousColumn = c;
+	previousValue = (*matrix)(r, c);
+	return (*matrix)(r, c);
+}
+
+#endif
