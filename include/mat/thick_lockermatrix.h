@@ -16,6 +16,7 @@ class ThickLockerMatrix : public Matrix<T> {
 		T& operator()(int r, int c);
 		Matrix<T>* wrapping() { return originalMatrix -> wrapping(); }
 		Matrix<T>* clone() { return new ThickLockerMatrix(*(originalMatrix->clone())); }
+		Matrix<T>* make(int row, int column) { return originalMatrix->make(row, column); }
 };
 
 #include "mat/template/thick_lockermatrix"

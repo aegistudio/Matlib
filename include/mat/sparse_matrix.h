@@ -37,6 +37,10 @@ class SparseMatrix : public Matrix<T> {
 		Matrix<T>* wrapping() {return this;}
 		Matrix<T>* clone() { return this; } // NOT IMPLEMENTED.
 
+		Matrix<T>* make(int row, int column) { 
+			return new SparseMatrix<T>(Matrix<T>::row, Matrix<T>::column);
+		}
+
 		void flush();	// Write back the value.
 
 		/** 

@@ -11,7 +11,7 @@ LoadMatrix<T>::LoadMatrix(Matrix<T>* wrappedMatrix) :
 	previousValue(0), notZeroCounter(0) {	}
 
 template<typename T>
-Matrix<T>* LoadMatrix<T>::clone() {
+LoadMatrix<T>* LoadMatrix<T>::clone() {
 	LoadMatrix<T>* loadMatrix 
 		= new LoadMatrix<T>(matrix->clone());
 		loadMatrix->previousRow = previousRow;
@@ -22,18 +22,73 @@ Matrix<T>* LoadMatrix<T>::clone() {
 }
 
 template<typename T>
-T& LoadMatrix<T>::operator()(int r, int c) {
+void LoadMatrix<T>::flush() {
 	if(previousRow != -1 && previousColumn != -1) {
 		T newValue = (*matrix)(previousRow, previousColumn);
 		if(newValue != previousValue) {
 			if(!iszero(newValue) && iszero(previousValue)) notZeroCounter ++;
 			else if(iszero(newValue) && !iszero(previousValue)) notZeroCounter --;
 		}
+		previousRow = previousColumn = -1;
 	}
+}
+
+template<typename T>
+T& LoadMatrix<T>::operator()(int r, int c) {
+	flush();
 	previousRow = r;
 	previousColumn = c;
 	previousValue = (*matrix)(r, c);
 	return (*matrix)(r, c);
+}
+
+template<typename T>
+void BalancedMatrix<T>::balance() {
+	if(state) {
+		// Fall back into sparse matrix if lower than floor.
+		if(loadMatrix->loadRatio() <= floor) {
+			state = 0;
+			Matrix<T>* newMatrix = new SparseMatrix<T>(Matrix<T>::row, Matrix<T>::column);
+			LoadMatrix<T>* newLoadMatrix = new LoadMatrix<T>(newMatrix);
+			for(int i = 0; i < Matrix<T>::row; i ++)
+				for(int j = 0; j < Matrix<T>::column; j ++)
+					(*newLoadMatrix)(i, j) = (*matrix)(i, j);
+
+			delete matrix; delete loadMatrix;
+			matrix = newMatrix;
+			loadMatrix = newLoadMatrix;
+		}
+	}
+	else {
+		// Convert into concrete matrix if exceeding ceil.
+		if(loadMatrix->loadRatio() >= ceil) {
+			state = 1;
+			Matrix<T>* newMatrix = new ConcreteMatrix<T>(Matrix<T>::row, Matrix<T>::column);
+			LoadMatrix<T>* newLoadMatrix = new LoadMatrix<T>(newMatrix);
+			for(int i = 0; i < Matrix<T>::row; i ++) 
+				for(int j = 0; j < Matrix<T>::column; j ++) 
+					(*newLoadMatrix)(i, j) = (*matrix)(i, j);
+
+			delete matrix; delete loadMatrix;
+			matrix = newMatrix;
+			loadMatrix = newLoadMatrix;
+		}
+	}
+}
+
+template<typename T>
+T& BalancedMatrix<T>::operator()(int r, int c) {
+	balance();
+	return (*loadMatrix)(r, c);
+}
+
+template<typename T>
+BalancedMatrix<T>* BalancedMatrix<T>::clone() {
+	BalancedMatrix<T>* newBalancedMatrix 
+		= new BalancedMatrix(Matrix<T>::row, Matrix<T>::column, ceil, floor, state);
+	newBalancedMatrix->loadMatrix = loadMatrix->clone();
+	newBalancedMatrix->matrix = loadMatrix->monitoring();
+	return newBalancedMatrix;
 }
 
 #endif
